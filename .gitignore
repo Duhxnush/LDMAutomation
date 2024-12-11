@@ -1,0 +1,10 @@
+.theia
+build.sh
+debug.sh
+release.sh
+load.sh
+.classpath
+.project
+.settings
+.factorypath
+.version

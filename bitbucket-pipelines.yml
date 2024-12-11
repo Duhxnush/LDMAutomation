@@ -1,0 +1,40 @@
+image: maven:3.3.9
+pipelines:
+  tags:
+    v*:
+    
+      - step:
+          script:
+            - mvn install -X
+
+
+          artifacts: 
+            - target/*.jar
+
+
+      - step:
+          script:
+            - echo $BITBUCKET_WORKSPACE
+            - echo $username
+            - echo $BITBUCKET_USERNAME
+            - echo $BITBUCKET_APP_PASSWORD
+            - echo ${BB_AUTH_STRING}
+            - echo $BITBUCKET_REPO_OWNER
+            - echo $BITBUCKET_REPO_SLUG
+            
+            - mv target/SimplifyQACodeeditor-0.0.1-SNAPSHOT-jar-with-dependencies.jar target/Codeeditor_$BITBUCKET_TAG.jar
+            - pipe: atlassian/bitbucket-upload-file:0.1.2
+              variables:
+                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+                FILENAME: "target/Codeeditor_$BITBUCKET_TAG.jar"
+
+
+      - step:
+          script:
+            - curl  http://172.104.183.14:8799/bigbucket --header 'Content-Type:application/json' --data '{"repo_url":"'"$BITBUCKET_REPO_FULL_NAME"'","tag":"'"$BITBUCKET_TAG"'","username":"'"$BITBUCKET_USERNAME"'","password":"'"$BITBUCKET_APP_PASSWORD"'"}'
+
+
+      
+          
+
