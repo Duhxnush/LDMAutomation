@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import com.microsoft.schemas.office.visio.x2012.main.PagesDocument;
 import com.simplifyqa.Utility.HttpUtility;
 import com.simplifyqa.Utility.KeyBoardActions;
@@ -1114,6 +1115,123 @@ public class CustomMethods {
             //TODO: handle exception
         }
     }
+
+    public boolean validateCumualtiveNumeric(String values, String cumulatives){
+        try {
+            String[] valArr=values.split(" ");
+            // String[] cumArr=cumulatives.split(" ");
+            double sum=0.00;
+            String cumString="";
+            for(int i=valArr.length-1;i>=0;i--){
+                sum+=Double.parseDouble(valArr[i]);
+                cumString+=(formatdecimal1(sum))+" ";
+            }
+
+            String[] numbers = cumString.split(" ");
+            StringBuilder reversed = new StringBuilder();
+            for (int i = numbers.length - 1; i >= 0; i--) {
+                reversed.append(numbers[i]);
+                if (i != 0) { 
+                    reversed.append(" ");
+                }
+            }
+            return reversed.toString().trim().equals(cumulatives.trim());
+        } catch (Exception e) {
+            //TODO: handle exception
+            return false;
+        }
+    }
+
+     public boolean mouseHoverOnElement(){
+        return mouseHoverOnElement("");
+    }
+    
+    public boolean mouseHoverOnElement(String replace){
+        HashMap<String, String> headers = new HashMap();
+        String host = String.valueOf(webdriver.webmethods.getDriver().getActionManger().getHostAddress()) + "/session/" + webdriver.webmethods.getDriver().getActionManger().getSessionId() + "/actions";
+        JsonObject param = null;
+        param = new JsonObject();
+          try {
+            String xpath=getuniquexpath();
+            xpath=xpath.replaceAll("#replace", replace);
+            JSONObject jo=webdriver.executeScript2("return (document.evaluate(\"" + xpath + "\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue).getBoundingClientRect()");
+            int x=((int)Double.parseDouble(((JSONObject)jo.get("value")).get("x").toString()))+2;
+            int y=((int)Double.parseDouble(((JSONObject)jo.get("value")).get("y").toString()))+2;
+            JSONObject jsonObject = new JSONObject();
+            JSONArray actionsArray = new JSONArray();
+            JSONObject initialAction = new JSONObject();
+            initialAction.put("type", "pointer");
+            initialAction.put("id", "mouse");
+            JSONObject parameters = new JSONObject();
+            parameters.put("pointerType", "mouse");
+            initialAction.put("parameters", parameters);
+            JSONArray pointerActions = new JSONArray();
+            JSONObject pointerMove = new JSONObject();
+            pointerMove.put("type", "pointerMove");
+            pointerMove.put("duration", 0);
+            pointerMove.put("origin", "viewport");
+            pointerMove.put("x", x);
+            pointerMove.put("y", y);
+            pointerActions.put(pointerMove);
+            initialAction.put("actions", pointerActions);
+            actionsArray.put(initialAction);
+            jsonObject.put("actions", actionsArray);
+            JSONObject res = HttpUtility.sendPost(host, jsonObject.toString(), headers);
+            if (res.get("value").equals(null))
+              return true; 
+            String errMsg = res.getJSONObject("value").get("error").toString();
+              return false;
+          } catch (Exception e) {
+              return false;
+          }
+    
+      }
+
+      public boolean copytoruntime(String local, String runtime) {
+        try {
+          GeneralMethod gm = new GeneralMethod();
+          int[] myarray = { 1 };
+          String[] value = gm.runtimeparameter(myarray);
+          for (int i = 0; i < value.length; i++) {
+            runtime = value[i];
+            webdriver.storeruntime(runtime, local);
+          } 
+          return true;
+        } catch (Exception e) {
+          return false;
+        } 
+      }
+
+      public boolean getValuefromDisabledField(String runtime){
+        try {
+            String xpath=null;
+            for(int i=0;i<webdriver.getCurrentObject().getAttributes().size();i++){
+                try{
+                    if(webdriver.getCurrentObject().getAttributes().get(i).get("unique").asBoolean()){
+                        xpath=webdriver.getCurrentObject().getAttributes().get(i).get("value").asText();
+                    }
+                }
+                catch(Exception e){
+
+                } 
+            }
+            if(xpath==null){
+                return false;
+            }
+            String text=webdriver.executeScript2("var element = document.evaluate(\"" + xpath + "\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; return element.value;").get("value").toString();
+            GeneralMethod gm = new GeneralMethod();
+            int[] array = {0};
+            String[] value = gm.runtimeparameter(array);
+            for (int j = 0; j < value.length; j++) {
+                runtime = value[j];
+                webdriver.storeruntime(runtime, text);
+            } 
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 
     public boolean urlGetter(String runtime){
         try {
